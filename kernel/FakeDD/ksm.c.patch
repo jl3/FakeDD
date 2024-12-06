@@ -1,0 +1,202 @@
+--- orig/ksm.c	2022-12-15 00:02:14.000000000 +0100
++++ ksm.c	2024-08-28 15:30:06.927514077 +0200
+@@ -214,6 +214,15 @@
+ /* The number of nodes in the unstable tree */
+ static unsigned long ksm_pages_unshared;
+ 
++#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++/* 
++ * The number of pages for which deduplication is faked,
++ * ie pages which are marked CoW even though there is only
++ * one copy.
++ */
++static unsigned long ksm_pages_fakededup;
++#endif
++
+ /* The number of rmap_items in use: to calculate pages_volatile */
+ static unsigned long ksm_rmap_items;
+ 
+@@ -495,10 +504,22 @@
+ 	struct rmap_item *rmap_item;
+ 
+ 	hlist_for_each_entry(rmap_item, &stable_node->hlist, hlist) {
+-		if (rmap_item->hlist.next)
++		if (rmap_item->hlist.next) {
+ 			ksm_pages_sharing--;
+-		else
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			// Check whether there is only one item left after removing
++			// one. If so, we will end up with a CoW page having only one
++			// copy.
++			if(!rmap_item->hlist.next->next) {
++				ksm_pages_fakededup++;
++			}
++			#endif
++		} else {
+ 			ksm_pages_shared--;
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			ksm_pages_fakededup--;
++			#endif
++		}
+ 		put_anon_vma(rmap_item->anon_vma);
+ 		rmap_item->address &= PAGE_MASK;
+ 		cond_resched();
+@@ -623,10 +644,21 @@
+ 		unlock_page(page);
+ 		put_page(page);
+ 
+-		if (!hlist_empty(&stable_node->hlist))
++		if (!hlist_empty(&stable_node->hlist)) {
+ 			ksm_pages_sharing--;
+-		else
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			// Check how many entries are left after deletion. If only
++			// one, we are left with a COW page that has only one copy.
++			if(!stable_node->hlist.first->next) {
++				ksm_pages_fakededup++;
++			}
++			#endif
++		} else {
+ 			ksm_pages_shared--;
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			ksm_pages_fakededup--;
++			#endif
++		}
+ 
+ 		put_anon_vma(rmap_item->anon_vma);
+ 		rmap_item->address &= PAGE_MASK;
+@@ -1022,6 +1054,11 @@
+ 			 */
+ 			set_page_stable_node(page, NULL);
+ 			mark_page_accessed(page);
++
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			ksm_pages_fakededup++;
++			#endif
++
+ 			/*
+ 			 * Page reclaim just frees a clean page with no dirty
+ 			 * ptes: make sure that the ksm page would be swapped.
+@@ -1029,8 +1066,22 @@
+ 			if (!PageDirty(page))
+ 				SetPageDirty(page);
+ 			err = 0;
+-		} else if (pages_identical(page, kpage))
++		} else if (pages_identical(page, kpage)) {
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			int oldmapcount = page_mapcount(kpage);
++			#endif
+ 			err = replace_page(vma, page, kpage, orig_pte);
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			// Check if kpage had one ref and now has more. If so,
++			// this was a fake-dedup page and is no longer one.
++			if((oldmapcount == 1) && (page_mapcount(kpage) > 1)) {
++				ksm_pages_fakededup--;
++			}
++			// Checking err should not be necessary -- whether the
++			// mapcount has changed provides sufficient information
++			// for our purposes.
++			#endif
++		}
+ 	}
+ 
+ 	if ((vma->vm_flags & VM_LOCKED) && kpage && !err) {
+@@ -1431,6 +1482,26 @@
+ 			return;
+ 	}
+ 
++	// This was moved here to avoid creating a new side-channel caused
++	// by already-existing pages to be deduplicated faster than pages
++	// for which no duplicate exists.
++	/*
++	 * If the hash value of the page has changed from the last time
++	 * we calculated it, this page is changing frequently: therefore we
++	 * don't want to deduplicate it, and we don't want to waste our time 
++	 * searching for something identical to it. We also do not want to
++	 * merge it with anything in the stable tree, as this would allow for
++	 * side-channel attacks: If there is already a copy of a page on the
++	 * system that is in the stable tree, a scanned page would be deduplicated
++	 * sooner than a page for which no duplicate exists if we were to merge
++	 * with pages in the stable tree regardless of whether it has changed.
++	 */
++	checksum = calc_checksum(page);
++	if (rmap_item->oldchecksum != checksum) {
++		rmap_item->oldchecksum = checksum;
++		return;
++	}
++
+ 	/* We first start with searching the page inside the stable tree */
+ 	kpage = stable_tree_search(page);
+ 	if (kpage == page && rmap_item->head == stable_node) {
+@@ -1459,13 +1530,8 @@
+ 	 * If the hash value of the page has changed from the last time
+ 	 * we calculated it, this page is changing frequently: therefore we
+ 	 * don't want to insert it in the unstable tree, and we don't want
+-	 * to waste our time searching for something identical to it there.
++	 * to waste our time searching for something identical to it.
+ 	 */
+-	checksum = calc_checksum(page);
+-	if (rmap_item->oldchecksum != checksum) {
+-		rmap_item->oldchecksum = checksum;
+-		return;
+-	}
+ 
+ 	tree_rmap_item =
+ 		unstable_tree_search_insert(rmap_item, page, &tree_page);
+@@ -1497,6 +1563,30 @@
+ 				break_cow(rmap_item);
+ 			}
+ 		}
++	} else {
++		struct vm_area_struct *mergeable_vma;
++		struct mm_struct *mm = rmap_item->mm;
++
++		if(printk_ratelimit()) {
++			printk("starting fake dedup for addr %lu", rmap_item->address);
++		}
++
++		remove_rmap_item_from_tree(rmap_item);
++		err = try_to_merge_with_ksm_page(rmap_item, page, NULL);
++		if(!err) {
++			lock_page(page);
++			stable_node = stable_tree_insert(page);
++			if (stable_node) {
++				stable_tree_append(rmap_item, stable_node);
++			}
++			unlock_page(page);
++
++			if (!stable_node) {
++				break_cow(rmap_item);
++			} else {
++			}
++		} else {
++		}		
+ 	}
+ }
+ 
+@@ -2254,6 +2344,15 @@
+ }
+ KSM_ATTR_RO(pages_unshared);
+ 
++#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++static ssize_t pages_fakededup_show(struct kobject *kobj,
++					struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", ksm_pages_fakededup);
++}
++KSM_ATTR_RO(pages_fakededup);
++#endif
++
+ static ssize_t pages_volatile_show(struct kobject *kobj,
+ 				   struct kobj_attribute *attr, char *buf)
+ {
+@@ -2290,6 +2389,9 @@
+ #ifdef CONFIG_NUMA
+ 	&merge_across_nodes_attr.attr,
+ #endif
++#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++	&pages_fakededup_attr.attr,
++#endif
+ 	NULL,
+ };
+ 

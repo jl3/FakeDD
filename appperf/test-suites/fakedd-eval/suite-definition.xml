@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>fakedd-eval</Title>
+    <Version>1.0.0</Version>
+    <TestType>System</TestType>
+    <Description>fakedd-eval</Description>
+    <Maintainer>Jens Lindemann</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/sqlite-2.1.0</Test>
+    <Arguments>8</Arguments>
+    <Description>Threads / Copies: 8</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/dbench-1.0.2</Test>
+    <Arguments>12</Arguments>
+    <Description>Client Count: 12</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/x264-2.7.0</Test>
+    <Arguments>Bosphorus_1920x1080_120fps_420_8bit_YUV.y4m</Arguments>
+    <Description>Video Input: Bosphorus 1080p</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/encode-mp3-1.7.4</Test>
+  </Execute>
+  <Execute>
+    <Test>pts/compress-7zip-1.9.0</Test>
+  </Execute>
+  <Execute>
+    <Test>pts/pgbench-1.11.1</Test>
+    <Arguments>-s 1 -c 100</Arguments>
+    <Description>Scaling Factor: 1 - Clients: 100 - Mode: Read Write</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/pgbench-1.11.1</Test>
+    <Arguments>-s 1 -c 100 -S</Arguments>
+    <Description>Scaling Factor: 1 - Clients: 100 - Mode: Read Only</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/pmbench-1.0.2</Test>
+    <Arguments>-j 8 -r 0</Arguments>
+    <Description>Concurrent Worker Threads: 8 - Read-Write Ratio: 100% Writes</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/pmbench-1.0.2</Test>
+    <Arguments>-j 8 -r 50</Arguments>
+    <Description>Concurrent Worker Threads: 8 - Read-Write Ratio: 50%</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/pmbench-1.0.2</Test>
+    <Arguments>-j 8 -r 100</Arguments>
+    <Description>Concurrent Worker Threads: 8 - Read-Write Ratio: 100% Reads</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>sched pipe -l 5000000</Arguments>
+    <Description>Benchmark: Sched Pipe</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>mem memcpy -l 100000 -s 1MB</Arguments>
+    <Description>Benchmark: Memcpy 1MB</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>mem memset -l 100000 -s 1MB</Arguments>
+    <Description>Benchmark: Memset 1MB</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>syscall basic -l 100000000</Arguments>
+    <Description>Benchmark: Syscall Basic</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>futex hash -r 30 -s</Arguments>
+    <Description>Benchmark: Futex Hash</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>futex lock-pi -r 30 -s</Arguments>
+    <Description>Benchmark: Futex Lock-Pi</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>epoll wait -r 30</Arguments>
+    <Description>Benchmark: Epoll Wait</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/openssl-3.0.1</Test>
+    <Arguments>rsa4096</Arguments>
+    <Description>Algorithm: RSA4096</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/memcached-1.2.0</Test>
+    <Arguments>--ratio=1:1</Arguments>
+    <Description>Set To Get Ratio: 1:1</Description>
+  </Execute>
+  <Execute>
+    <Test>pts/apache-3.0.0</Test>
+    <Arguments>-c 1000</Arguments>
+    <Description>Concurrent Requests: 1000</Description>
+  </Execute>
+</PhoronixTestSuite>

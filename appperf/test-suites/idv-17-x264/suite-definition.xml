@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-17-x264</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-17-x264</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/x264-2.7.0</Test>
+    <Arguments>Bosphorus_1920x1080_120fps_420_8bit_YUV.y4m</Arguments>
+    <Description>Video Input: Bosphorus 1080p</Description>
+  </Execute>
+</PhoronixTestSuite>

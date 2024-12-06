@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-13-pmbench-r</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-13-pmbench-r</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/pmbench-1.0.2</Test>
+    <Arguments>-j 8 -r 100</Arguments>
+    <Description>Concurrent Worker Threads: 8 - Read-Write Ratio: 100% Reads</Description>
+  </Execute>
+</PhoronixTestSuite>

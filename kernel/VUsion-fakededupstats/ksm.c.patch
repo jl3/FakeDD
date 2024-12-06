@@ -1,0 +1,105 @@
+--- orig/ksm.c	2024-09-20 00:46:49.981751662 +0200
++++ ksm.c	2024-09-20 00:46:59.754842446 +0200
+@@ -225,6 +225,15 @@
+ /* The number of nodes in the unstable tree */
+ static unsigned long ksm_pages_unshared;
+ 
++#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++/* 
++ * The number of pages for which deduplication is faked,
++ * ie pages which are marked CoW even though there is only
++ * one copy.
++ */
++static unsigned long ksm_pages_fakededup;
++#endif
++
+ /* The number of rmap_items in use: to calculate pages_volatile */
+ static unsigned long ksm_rmap_items;
+ 
+@@ -595,10 +604,22 @@
+ 	struct rmap_item *rmap_item;
+ 
+ 	hlist_for_each_entry(rmap_item, &stable_node->hlist, hlist) {
+-		if (rmap_item->hlist.next)
++		if (rmap_item->hlist.next) {
+ 			ksm_pages_sharing--;
+-		else
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			// Check whether there is only one item left after removing
++			// one. If so, we will end up with a CoW page having only one
++			// copy.
++			if(!rmap_item->hlist.next->next) {
++				ksm_pages_fakededup++;
++			}
++			#endif
++		} else {
+ 			ksm_pages_shared--;
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			ksm_pages_fakededup--;
++			#endif
++		}
+ 		put_anon_vma(rmap_item->anon_vma);
+ 		rmap_item->address &= PAGE_MASK;
+ 		cond_resched();
+@@ -1285,6 +1306,11 @@
+ 			 */
+ 			set_page_stable_node(page, NULL);
+ 			mark_page_accessed(page);
++			
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			ksm_pages_fakededup++;
++			#endif
++			
+ 			/*
+ 			 * Page reclaim just frees a clean page with no dirty
+ 			 * ptes: make sure that the ksm page would be swapped.
+@@ -1292,8 +1318,22 @@
+ 			if (!PageDirty(page))
+ 				SetPageDirty(page);
+ 			err = 0;
+-		} else if (pages_identical(page, kpage))
++		} else if (pages_identical(page, kpage)) {
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			int oldmapcount = page_mapcount(kpage);
++			#endif
+ 			err = replace_page(vma, page, kpage, orig_pte);
++			#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++			// Check if kpage had one ref and now has more. If so,
++			// this was a fake-dedup page and is no longer one.
++			if((oldmapcount == 1) && (page_mapcount(kpage) > 1)) {
++				ksm_pages_fakededup--;
++			}
++			// Checking err should not be necessary -- whether the
++			// mapcount has changed provides sufficient information
++			// for our purposes.
++			#endif
++		}
+ 	}
+ 
+ 	if ((vma->vm_flags & VM_LOCKED) && kpage && !err) {
+@@ -2608,6 +2648,15 @@
+ }
+ KSM_ATTR_RO(pages_unshared);
+ 
++#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++static ssize_t pages_fakededup_show(struct kobject *kobj,
++					struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", ksm_pages_fakededup);
++}
++KSM_ATTR_RO(pages_fakededup);
++#endif
++
+ static ssize_t pages_volatile_show(struct kobject *kobj,
+ 				   struct kobj_attribute *attr, char *buf)
+ {
+@@ -2674,6 +2723,9 @@
+ #ifdef CONFIG_NUMA
+ 	&merge_across_nodes_attr.attr,
+ #endif
++#ifdef CONFIG_KSM_FAKEDEDUP_STATS
++	&pages_fakededup_attr.attr,
++#endif
+ 	NULL,
+ };
+ 

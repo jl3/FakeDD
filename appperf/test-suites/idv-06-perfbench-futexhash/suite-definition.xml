@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-06-perfbench-futexhash</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-06-perfbench-futexhash</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>futex hash -r 30 -s</Arguments>
+    <Description>Benchmark: Futex Hash</Description>
+  </Execute>
+</PhoronixTestSuite>

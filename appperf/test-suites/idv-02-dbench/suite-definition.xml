@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-02-dbench</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-02-dbench</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/dbench-1.0.2</Test>
+    <Arguments>12</Arguments>
+    <Description>Client Count: 12</Description>
+  </Execute>
+</PhoronixTestSuite>

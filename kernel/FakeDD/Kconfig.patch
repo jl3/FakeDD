@@ -1,0 +1,19 @@
+--- orig/Kconfig	2022-12-06 00:28:14.000000000 +0100
++++ Kconfig	2024-08-28 19:14:38.981922362 +0200
+@@ -340,6 +340,16 @@
+ 	  See Documentation/vm/ksm.txt for more information: KSM is inactive
+ 	  until a program has madvised that an area is MADV_MERGEABLE, and
+ 	  root has set /sys/kernel/mm/ksm/run to 1 (if CONFIG_SYSFS is set).
++	
++config KSM_FAKEDEDUP_STATS
++	bool "Enable statistics for fake deduplicated pages"
++	default n
++	depends on KSM
++	help
++	  Enable reporting of fake-deduplicated pages in
++	  /sys/kernel/mm/ksm/pages_fakededup. Such pages are KSM pages and
++	  will thus be copied before they can be written to despite having
++	  only one virtual page pointing to them.
+ 
+ config DEFAULT_MMAP_MIN_ADDR
+         int "Low address space to protect from user allocation"

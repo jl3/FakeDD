@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-10-perfbench-futexlockpi</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-10-perfbench-futexlockpi</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>futex lock-pi -r 30 -s</Arguments>
+    <Description>Benchmark: Futex Lock-Pi</Description>
+  </Execute>
+</PhoronixTestSuite>

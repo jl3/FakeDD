@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-15-pgbench</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-15-pgbench</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/pgbench-1.11.1</Test>
+    <Arguments>-s 100 -c 1 -S</Arguments>
+    <Description>Scaling Factor: 100 - Clients: 1 - Mode: Read Only</Description>
+  </Execute>
+</PhoronixTestSuite>

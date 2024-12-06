@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--Phoronix Test Suite v10.8.4-->
+<PhoronixTestSuite>
+  <SuiteInformation>
+    <Title>idv-07-perfbench-memcpy</Title>
+    <Version>1.0.0</Version>
+    <TestType>Other</TestType>
+    <Description>idv-07-perfbench-memcpy</Description>
+    <Maintainer>jl</Maintainer>
+  </SuiteInformation>
+  <Execute>
+    <Test>pts/perf-bench-1.0.4</Test>
+    <Arguments>mem memcpy -l 100000 -s 1MB</Arguments>
+    <Description>Benchmark: Memcpy 1MB</Description>
+  </Execute>
+</PhoronixTestSuite>
